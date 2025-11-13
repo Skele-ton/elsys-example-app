@@ -31,7 +31,7 @@ jobs:
           sleep 3  # wait a moment for server to start
 
       - name: Run pytest
-        run: pytest -v
+        run: pytest
 
       - name: Run short locust headless test
         run: |
