@@ -28,7 +28,7 @@ The server will start on `http://localhost:8000`
 
 ### GET `/files/{filename}`
 Retrieve a file by filename.
-
+ 
 **Example:**
 ```bash
 curl http://localhost:8000/files/myfile.txt
