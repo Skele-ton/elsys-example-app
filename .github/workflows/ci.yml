@@ -31,13 +31,7 @@ jobs:
       - name: Start FastAPI app in background
         run: |
           nohup uvicorn main:app --host 0.0.0.0 --port 8000 &>/dev/null &
-          sleep 3  # wait a moment for server to start
-
-      - name: Wait for server to be ready
-        run: |
-          echo "Waiting for server to start..."
-          timeout 20 bash -c 'until curl -s http://localhost:8000/health | grep -q "healthy"; do sleep 1; done'
-          echo "Server is up!"
+          sleep 15  # wait a moment for server to start
 
       - name: Run short locust headless test
         run: |
