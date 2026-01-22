@@ -1,14 +1,55 @@
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.responses import FileResponse
+import inspect
+import logging
 import os
 from pathlib import Path
 from datetime import datetime
+from functools import wraps
+from time import perf_counter
 
 app = FastAPI(title="File Storage API", version="1.0.0")
 
 # Directory where files will be stored
 STORAGE_DIR = Path("storage")
 STORAGE_DIR.mkdir(exist_ok=True)
+logger = logging.getLogger("storage_api")
+if not logger.handlers:
+    handler = logging.StreamHandler()
+    formatter = logging.Formatter("%(asctime)s %(levelname)s %(message)s")
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+logger.setLevel(logging.INFO)
+
+
+def log_endpoint(action: str):
+    """
+    Decorator (Decorator Pattern) that logs execution time of endpoints.
+    """
+    def decorator(func):
+        if not inspect.iscoroutinefunction(func):
+            @wraps(func)
+            def wrapper(*args, **kwargs):
+                start = perf_counter()
+                try:
+                    return func(*args, **kwargs)
+                finally:
+                    duration_ms = (perf_counter() - start) * 1000
+                    logger.info("%s completed in %.2f ms", action, duration_ms)
+            return wrapper
+
+        @wraps(func)
+        async def async_wrapper(*args, **kwargs):
+            start = perf_counter()
+            try:
+                return await func(*args, **kwargs)
+            finally:
+                duration_ms = (perf_counter() - start) * 1000
+                logger.info("%s completed in %.2f ms", action, duration_ms)
+
+        return async_wrapper
+
+    return decorator
 
 # Counter for files stored (initialize with existing files count)
 def get_file_count():
@@ -32,6 +73,7 @@ async def root():
 
 
 @app.get("/files/{filename}")
+@log_endpoint("get_file")
 async def get_file(filename: str):
     """
     Retrieve a file by filename.
@@ -62,6 +104,7 @@ async def get_file(filename: str):
 
 
 @app.post("/files")
+@log_endpoint("store_file")
 async def store_file(file: UploadFile = File(...)):
     """
     Store a file locally on the filesystem.
@@ -107,6 +150,7 @@ async def store_file(file: UploadFile = File(...)):
 
 
 @app.get("/files")
+@log_endpoint("list_files")
 async def list_files():
     """
     List all stored files.
@@ -119,6 +163,7 @@ async def list_files():
 
 
 @app.get("/health")
+@log_endpoint("health_check")
 async def health_check():
     """
     Health check endpoint.
@@ -134,6 +179,7 @@ async def health_check():
 
 
 @app.get("/metrics")
+@log_endpoint("metrics")
 async def metrics():
     """
     Metrics endpoint providing server statistics.
